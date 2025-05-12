@@ -1,6 +1,8 @@
 node_modules
 # Keep environment variables out of version control
 .env
-generated/prisma/
 .PGDATA
+.PGDATA_DRIZZLE
 waw.mp4
+.cache
+app.log

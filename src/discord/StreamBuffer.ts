@@ -31,7 +31,7 @@ class StreamBuffer extends Transform {
       position += toCopy
       this.offset += toCopy
 
-      if (this.offset === this.chunkSize) {
+      if (this.offset >= this.chunkSize) {
         this.push(this.buffer)
         this.buffer = Buffer.alloc(this.chunkSize)
         this.offset = 0

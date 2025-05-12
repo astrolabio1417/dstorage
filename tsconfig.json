@@ -1,12 +1,12 @@
 {
-    "extends": "@tsconfig/node22/tsconfig.json",
-    "compilerOptions": {
-        "outDir": "./dist",
-        "baseUrl": ".",
-        "paths": {
-            "@/*": ["src/*"]
-        }
-    },
-    "include": ["src/**/*.ts"],
-    "exclude": ["dist"]
+  "extends": "@tsconfig/node22/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "drizzle.config.ts"],
+  "exclude": ["dist"]
 }

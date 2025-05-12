@@ -16,6 +16,7 @@ export interface DCRestAttachmentResponse {
 }
 
 export interface DiscordFileOptions {
+  authorization: string
   maxChunkSize?: number
   maxParallel?: number
   webhooks: string[]
@@ -27,4 +28,11 @@ export interface IDiscordFile {
   size: number
   startRange: number
   url: string
+}
+
+export interface IDiscordRefreshUrlResponse {
+  refreshed_urls: {
+    original: string
+    refreshed: string
+  }[]
 }

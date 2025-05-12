@@ -4,23 +4,17 @@ const NodeType = z.enum(['FOLDER', 'FILE'])
 
 export const nodeCreateSchema = z.object({
   name: z.string().min(1),
-  parentId: z.coerce.number().min(1).optional(),
+  parent: z.coerce.number().min(1).nullish().default(null),
   type: NodeType,
 })
 
 export const nodeCreateFolderSchema = z.object({
   name: z.string().min(1),
-  parentId: z.coerce.number().min(1).optional(),
+  parent: z.coerce.number().min(1).optional(),
 })
 
-export const nodeUploadFilesSchema = z.object({
-  parentId: z.coerce.number(),
+export const nodeParentSchema = z.object({
+  parent: z.coerce.number().nullish().default(null),
 })
 
-export const nodeUploadFilesValidationSchema = z.object({
-  parentId: z.coerce.number().nullish().default(null),
-})
-
-export const nodeRetrieveParamsSchema = z.object({ id: z.coerce.number() })
-
-export const nodeListQuerySchema = z.object({ parentId: z.coerce.number().nullish().default(null) })
+export const idSchema = z.object({ id: z.coerce.number() })

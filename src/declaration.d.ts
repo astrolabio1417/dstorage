@@ -1,9 +1,9 @@
-import { Node } from 'generated/prisma'
+import { nodesTable } from './db/schema'
 
 declare global {
   namespace Express {
     interface Request {
-      node?: Node
+      node?: typeof nodesTable.$inferSelect
     }
   }
 }

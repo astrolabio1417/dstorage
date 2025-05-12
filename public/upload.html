@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+  <body>
+    <p>Click on the "Choose File" button to upload a file:</p>
+
+    <form id="submit-form" method="post" action="/api/nodes/upload-test" enctype="multipart/form-data">
+      <input type="file" id="files" name="files" accept=".mp4" />
+      <input id="submit" type="submit" />
+    </form>
+
+    <h1 id="percent"></h1>
+
+    <script>
+      const f = document.getElementById('submit-form')
+      f.onsubmit = uploader
+
+      function uploader(e) {
+        e.preventDefault()
+        const xhr = new XMLHttpRequest()
+        const formData = new FormData()
+        const fileInput = document.getElementById('files')
+        const submitBtn = document.getElementById('submit')
+        const p = document.getElementById('percent')
+
+        formData.append('file', fileInput.files[0])
+
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = (event.loaded / event.total) * 100
+            const txt = `Uploaded ${event.loaded} bytes of ${event.total} bytes (${percentComplete.toFixed(2)}%)`
+            console.log(txt)
+            p.innerHTML = txt
+          } else {
+            console.log('Total upload size is unknown.')
+          }
+        })
+
+        xhr.addEventListener('load', () => {
+          console.log('Upload complete')
+        })
+
+        xhr.addEventListener('error', () => {
+          console.error('Upload error')
+        })
+
+        xhr.open('POST', '/api/nodes/upload-test')
+        xhr.send(formData)
+        submitBtn.setAttribute('disabled', true)
+      }
+    </script>
+  </body>
+</html>

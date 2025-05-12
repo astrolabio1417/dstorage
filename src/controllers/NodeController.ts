@@ -1,33 +1,39 @@
+import { cache } from '@/cache'
+import { db } from '@/db'
+import { filesTable, nodesTable, typesEnum } from '@/db/schema'
 import { discordFile } from '@/discord/DiscordFile'
 import { CustomDiscordStorageFileResult } from '@/discord/DiscordStorage'
-import prisma from '@/prismaClient'
-import {
-  nodeCreateFolderSchema,
-  nodeCreateSchema,
-  nodeListQuerySchema,
-  nodeRetrieveParamsSchema,
-  nodeUploadFilesValidationSchema,
-} from '@/schemas/NodeSchemas'
+import { logger } from '@/logger'
+import { idSchema, nodeCreateFolderSchema, nodeCreateSchema, nodeParentSchema } from '@/schemas/NodeSchemas'
 import { asyncWrapper, parseRange } from '@/utils'
-import { NodeType, Prisma } from 'generated/prisma'
+import { and, asc, eq, inArray, isNull, sql, SQL } from 'drizzle-orm'
 import mime from 'mime'
+import { PassThrough } from 'stream'
 
-const NODE_NOT_FOUND_MESSAGE = 'Node not found!'
-const DUPLICATE_ERROR_MESSAGE = 'Duplicate record: unique constraint failed.'
+export const NODE_NOT_FOUND_MESSAGE = 'Node not found!'
+export const DUPLICATE_ERROR_MESSAGE = 'Duplicate record: unique constraint failed.'
 
-export const nodeValidationController = (type: NodeType | null = null) =>
+export const nodeValidationController = (type: (typeof typesEnum.enumValues)[number] | null = null) =>
   asyncWrapper(async (req, res, next) => {
-    const parsedParams = nodeRetrieveParamsSchema.parse(req.params)
-    const node = await prisma.node.findUnique({
-      where: { id: parsedParams.id, ...(type ? { type } : {}) },
-    })
+    const { id } = idSchema.parse(req.params)
+    const conditions = [eq(nodesTable.id, id)]
 
-    if (!node) {
+    if (type) {
+      conditions.push(eq(nodesTable.type, type))
+    }
+
+    const nodes = await db
+      .select()
+      .from(nodesTable)
+      .where(and(...conditions))
+      .limit(1)
+
+    if (!nodes.length) {
       res.status(404).json({ message: `Node ${type ? `with a type of ${type} ` : ''}not found!` })
       return
     }
 
-    req.node = node
+    req.node = nodes[0]
     next()
   })
 
@@ -39,123 +45,139 @@ export const nodeRetrieveController = asyncWrapper(async (req, res) => {
 
   res.json({
     ...req.node,
-    fileDataList: await prisma.fileData.findMany({ where: { fieldId: req.node.id } }),
-    files: await prisma.node.findMany({
-      where: { parentId: req.node.id },
-    }),
+    files: await db.select().from(nodesTable).where(eq(nodesTable.parent, req.node.id)),
+    nodeFiles: await db.select().from(filesTable).where(eq(filesTable.node, req.node.id)).orderBy(asc(filesTable.startRange)),
   })
 })
 
 export const nodeCreateFolderController = asyncWrapper(async (req, res) => {
-  const parsedBody = await nodeCreateFolderSchema.parseAsync(req.body)
-  const node = await prisma.node.findFirst({ where: { ...parsedBody, type: 'FOLDER' } })
+  const { name, parent } = await nodeCreateFolderSchema.parseAsync(req.body)
+  const conditions = [eq(nodesTable.name, name), eq(nodesTable.type, 'FOLDER')]
 
-  if (node?.id) {
+  if (parent) {
+    conditions.push(eq(nodesTable.parent, parent))
+  }
+
+  const node = await db
+    .select()
+    .from(nodesTable)
+    .where(and(...conditions))
+
+  if (node.length) {
     res.status(400).json({ message: DUPLICATE_ERROR_MESSAGE })
     return
   }
 
-  const data = await prisma.node.create({ data: { ...parsedBody, type: 'FOLDER' } })
-  res.json(data)
+  const data = await db.insert(nodesTable).values({ name, parent, type: 'FOLDER' }).returning()
+  res.json(data[0])
 })
 
 export const nodeUploadFilesController = asyncWrapper(async (req, res) => {
-  const parsedBody = await nodeUploadFilesValidationSchema.parseAsync(req.body)
-  let node = undefined
+  const { parent } = await nodeParentSchema.parseAsync(req.body)
+  let node: typeof nodesTable.$inferSelect | undefined = undefined
+  const files = req.files as CustomDiscordStorageFileResult[]
+  const nodeFiles: (typeof filesTable.$inferInsert)[] = []
 
-  if (parsedBody.parentId) {
-    const qNode = await prisma.node.findFirst({ where: { ...parsedBody, type: 'FOLDER' } })
+  if (parent) {
+    const parentNode = await db
+      .select()
+      .from(nodesTable)
+      .where(and(eq(nodesTable.id, parent), eq(nodesTable.type, 'FOLDER')))
 
-    if (!qNode?.id) {
+    if (!parentNode.length) {
       res.status(404).json({ message: NODE_NOT_FOUND_MESSAGE })
       // TODO: delete the file from storage if possible
       return
     }
 
-    node = qNode
+    node = parentNode[0]
   }
 
-  const files = req.files as CustomDiscordStorageFileResult[]
-  const data: Prisma.NodeCreateManyInput[] = files.map((f) => ({
+  if (!files[0]?.discordResult.length) {
+    res.status(400).json({ message: 'Discord file upload result are empty!' })
+    return
+  }
+
+  const data: (typeof nodesTable.$inferInsert)[] = files.map((f) => ({
     name: f.originalname ?? '',
-    parentId: node?.id,
+    parent: node?.id,
     type: 'FILE',
   }))
-  const nodes = await prisma.node.createManyAndReturn({
-    data,
-    skipDuplicates: true,
-  })
-  const fileDatas: Prisma.FileDataCreateManyInput[] = []
 
-  nodes.forEach((n) => {
+  const createdNodes = await db.insert(nodesTable).values(data).returning()
+
+  createdNodes.forEach((n) => {
     const f = files.find((f) => f.originalname === n.name)
 
-    if (!f) throw new Error('Something went wrong. Cannot find filedata of node!')
+    if (!f) throw new Error('Cannot find filedata of node!')
 
     f.discordResult.forEach((x) =>
-      fileDatas.push({
+      nodeFiles.push({
         endRange: x.endRange,
-        fieldId: n.id,
+        node: n.id,
         size: x.size,
         startRange: x.startRange,
         url: x.url,
       }),
     )
-
-    return
   })
 
-  await prisma.fileData.createMany({ data: fileDatas })
-  res.status(nodes.length ? 200 : 400).json({ files, nodes })
+  await db.insert(filesTable).values(nodeFiles)
+  res.json({ nodes: createdNodes }).status(createdNodes.length ? 200 : 400)
 })
 
 export const nodeCreateController = asyncWrapper(async (req, res) => {
-  const parsedBody = await nodeCreateSchema.parseAsync(req.body)
-  const node = await prisma.node.findFirst({ where: parsedBody })
+  const { name, parent: parentId, type } = await nodeCreateSchema.parseAsync(req.body)
+  const conditions = [eq(nodesTable.name, name), eq(nodesTable.type, type), parentId ? eq(nodesTable.parent, parentId) : isNull(nodesTable.parent)]
 
-  if (node?.id) {
+  const nodes = await db
+    .select()
+    .from(nodesTable)
+    .where(and(...conditions))
+
+  if (nodes.length) {
     res.status(400).json({ message: DUPLICATE_ERROR_MESSAGE })
     return
   }
 
-  const data = await prisma.node.create({ data: parsedBody })
-  res.json(data)
+  const data = await db.insert(nodesTable).values({ name, parent: parentId, type }).returning()
+  res.json(data[0])
 })
 
 export const nodeListController = asyncWrapper(async (req, res) => {
-  const parsedParams = await nodeListQuerySchema.parseAsync(req.query)
-  const nodes = await prisma.node.findMany({
-    orderBy: [{ type: 'asc' }, { name: 'asc' }],
-    where: { parentId: parsedParams.parentId },
-  })
+  const { parent } = await nodeParentSchema.parseAsync(req.query)
+  const nodes = await db
+    .select()
+    .from(nodesTable)
+    .where(parent ? eq(nodesTable.parent, parent) : isNull(nodesTable.parent))
+    .orderBy(asc(nodesTable.type), asc(nodesTable.name), asc(nodesTable.id))
 
   res.json(nodes)
 })
 
 export const nodeDownloadController = asyncWrapper(async (req, res) => {
-  const parsedParams = nodeRetrieveParamsSchema.parse(req.params)
+  const { id } = idSchema.parse(req.params)
   const rangeString = req.headers.range
 
-  const fileDatas = await prisma.fileData.findMany({
-    orderBy: { startRange: 'asc' },
-    where: { fieldId: parsedParams.id },
-  })
+  const cacheKey = `nodefiles-${id.toString()}`
+  let nodeFiles: (typeof filesTable.$inferSelect)[] | undefined = cache.get(cacheKey)
 
-  const endRange = fileDatas[fileDatas.length - 1].endRange
+  logger.debug(`nodedl ${id.toString()} via ${!nodeFiles ? 'db' : 'cache'}`)
+
+  if (!nodeFiles) {
+    nodeFiles = await db.select().from(filesTable).where(eq(filesTable.node, id)).orderBy(asc(filesTable.startRange))
+    if (nodeFiles.length) cache.set(cacheKey, nodeFiles)
+  }
+
+  if (!nodeFiles.length) {
+    res.status(204).send()
+    return
+  }
+
+  const endRange = nodeFiles[nodeFiles.length - 1].endRange
   const totalSize = endRange + 1
   const parsedRange = parseRange(rangeString ?? '', endRange)
-
-  const stream = discordFile.fileStream(
-    fileDatas.map((n) => ({
-      endRange: n.endRange,
-      filename: 'f',
-      size: n.size,
-      startRange: n.startRange,
-      url: n.url,
-    })),
-    parsedRange[0],
-    parsedRange[1],
-  )
+  const passthrough = new PassThrough()
 
   res.writeHead(rangeString ? 206 : 200, {
     'Accept-Ranges': 'bytes',
@@ -165,22 +187,40 @@ export const nodeDownloadController = asyncWrapper(async (req, res) => {
     'Content-Type': mime.getType(req.node?.name ?? '')?.toString() ?? mime.getType('txt')?.toString(),
   })
 
-  const close = () => {
-    if (!stream.destroyed) {
-      stream.destroy()
-    }
-  }
+  passthrough.pipe(res)
 
-  req.on('close', () => {
-    console.log('Connection closed by client')
-    close()
-  })
+  await discordFile.fileStream(
+    passthrough,
+    nodeFiles.map((n) => ({
+      endRange: n.endRange,
+      filename: n.id.toString(),
+      size: n.size,
+      startRange: n.startRange,
+      url: n.url,
+    })),
+    parsedRange[0],
+    parsedRange[1],
+    async (response) => {
+      // https://orm.drizzle.team/docs/guides/update-many-with-different-value
+      const sqlChunks: SQL[] = []
+      const ids: number[] = []
 
-  stream
-    .pipe(res)
-    .on('close', close)
-    .on('error', (err) => {
-      console.error('error:', err)
-      close()
-    })
+      sqlChunks.push(sql`(case`)
+
+      for (const newFile of response.refreshed_urls) {
+        const oldFile = nodeFiles.find((file) => file.url === newFile.original)
+        if (!oldFile) throw new Error('Cannot find original file!')
+        sqlChunks.push(sql`when ${filesTable.id} = ${oldFile.id} then ${newFile.refreshed}`)
+        ids.push(oldFile.id)
+      }
+
+      sqlChunks.push(sql`end)`)
+      const finalSql: SQL = sql.join(sqlChunks, sql.raw(' '))
+      await db.update(filesTable).set({ url: finalSql }).where(inArray(filesTable.id, ids))
+
+      const latestNodeFiles = await db.select().from(filesTable).where(eq(filesTable.node, id)).orderBy(asc(filesTable.startRange))
+      if (latestNodeFiles.length) cache.set(cacheKey, latestNodeFiles)
+      logger.debug(latestNodeFiles, 'url has been refreshed')
+    },
+  )
 })

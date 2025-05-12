@@ -1,7 +1,7 @@
 {
   "name": "dstorage",
   "version": "1.0.0",
-  "description": "",
+  "description": "Discord Storage",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -22,7 +22,6 @@
     "@types/express": "^5.0.1",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.15.2",
-    "@types/parallel-transform": "^1.1.4",
     "@types/pg": "^8.11.14",
     "drizzle-kit": "^0.31.0",
     "eslint": "^9.25.1",
@@ -33,7 +32,6 @@
   },
   "dependencies": {
     "@discordjs/rest": "^2.4.3",
-    "@prisma/client": "^6.6.0",
     "@tsconfig/node22": "^22.0.1",
     "body-parser": "^2.2.0",
     "discord-api-types": "^0.38.1",
@@ -41,13 +39,16 @@
     "drizzle-orm": "^0.43.1",
     "eslint-plugin-perfectionist": "^4.12.3",
     "express": "^5.1.0",
+    "flat-cache": "^6.1.9",
     "mime": "^4.0.7",
     "multer": "^1.4.5-lts.2",
     "node-fetch": "^3.3.2",
-    "parallel-transform": "^1.2.0",
     "pg": "^8.15.6",
+    "pino": "^9.6.0",
+    "pino-http": "^10.4.0",
+    "pino-pretty": "^13.0.0",
+    "pipeline-pipe": "^0.3.0",
     "prettier": "^3.5.3",
-    "prisma": "^6.6.0",
     "zod": "^3.24.3",
     "zod-validation-error": "^3.4.0"
   }

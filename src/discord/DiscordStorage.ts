@@ -15,8 +15,8 @@ class DiscordStorage implements multer.StorageEngine {
       .then((data) => {
         callback(null, { ...file, discordResult: data })
       })
-      .catch((err: unknown) => {
-        callback(err)
+      .catch((e: unknown) => {
+        callback(e as Error)
       })
   }
 
