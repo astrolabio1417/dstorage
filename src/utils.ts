@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { NextFunction, Request, RequestHandler, Response } from 'express'
 
 export const asyncWrapper = (controller: RequestHandler): RequestHandler => {
@@ -33,4 +34,8 @@ export const getMemoryUsage = () => {
   }
 
   return memoryUsage
+}
+
+export const generateToken = () => {
+  return crypto.randomBytes(32).toString('hex')
 }

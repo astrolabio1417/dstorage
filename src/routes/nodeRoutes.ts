@@ -6,14 +6,17 @@ import {
   nodeUploadFilesController,
   nodeValidationController,
 } from '@/controllers/NodeController'
+import { authMiddleware } from '@/middleware/authMiddleware'
 import uploadFiles from '@/middleware/upload'
 import express from 'express'
 
 const nodeRouter = express.Router()
 
 nodeRouter.get('/', nodeListController)
-nodeRouter.post('/', nodeCreateFolderController)
-nodeRouter.post('/upload', uploadFiles.array('files'), nodeUploadFilesController)
+nodeRouter.post('/', authMiddleware, nodeCreateFolderController)
+
+nodeRouter.post('/upload', authMiddleware, uploadFiles.array('files'), nodeUploadFilesController)
+
 nodeRouter.get('/:id', nodeValidationController(), nodeRetrieveController)
 nodeRouter.get('/:id/download', nodeValidationController('FILE'), nodeDownloadController)
 

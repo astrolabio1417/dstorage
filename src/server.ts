@@ -5,6 +5,7 @@ import pino from 'pino-http'
 
 import { logger } from './logger'
 import errorHandlerMiddleware from './middleware/errorHandler'
+import authRouter from './routes/authRoutes'
 import nodeRouter from './routes/nodeRoutes'
 
 const port = 3000
@@ -20,6 +21,7 @@ app.get('/', (req, res) => {
 })
 
 app.use('/api/nodes', nodeRouter)
+app.use('/api/auth', authRouter)
 
 app.use(errorHandlerMiddleware)
 
