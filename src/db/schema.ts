@@ -41,3 +41,9 @@ export const filesTable = pgTable(
   },
   (table) => [unique('field__start_range').on(table.node, table.startRange)],
 )
+
+export const tokensTable = pgTable('tokens', {
+  createdAt: timestamp().defaultNow(),
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  token: varchar({ length: 255 }).notNull().unique(),
+})
