@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import bodyParser from 'body-parser'
 import express from 'express'
+import path from 'path'
 import pino from 'pino-http'
 
 import { logger } from './logger'
@@ -16,8 +17,12 @@ app.use(express.static('public'))
 app.use(express.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 
-app.get('/', (req, res) => {
-  res.sendFile('public/index.html')
+app.get('/video', (_, res) => {
+  res.sendFile(path.join(__dirname, '../public/video.html'))
+})
+
+app.get('/login', (_, res) => {
+  res.sendFile(path.join(__dirname, '../public/login.html'))
 })
 
 app.use('/api/nodes', nodeRouter)

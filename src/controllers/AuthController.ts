@@ -7,7 +7,7 @@ export const LoginController = asyncWrapper(async (req, res) => {
   const { password } = await LoginPasswordSchema.parseAsync(req.body)
 
   if (password !== ADMIN_PASSWORD) {
-    res.status(404)
+    res.status(400).json({ message: 'You have entered an invalid password' })
     return
   }
 
