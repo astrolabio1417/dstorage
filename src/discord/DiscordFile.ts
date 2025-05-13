@@ -104,12 +104,8 @@ class DiscordFile {
       })
 
       try {
-        // TODO: refresh discord file url if not found?
-        const res = await fetch(file.url, {
-          headers,
-        })
+        const res = await fetch(file.url, { headers })
 
-        // TODO: REFRESH ALL FILES IN ONE GO
         if (res.status === 404) {
           const oldFiles = files.map((f) => f.url)
           logger.info(`Refreshing node files url ${oldFiles.join(', ')}`)
