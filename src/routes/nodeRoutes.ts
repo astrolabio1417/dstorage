@@ -1,5 +1,6 @@
 import {
   nodeCreateFolderController,
+  nodeDeleteController,
   nodeDownloadController,
   nodeListController,
   nodeRetrieveController,
@@ -18,6 +19,7 @@ nodeRouter.post('/', authMiddleware, nodeCreateFolderController)
 nodeRouter.post('/upload', authMiddleware, uploadFiles.array('files'), nodeUploadFilesController)
 
 nodeRouter.get('/:id', nodeValidationController(), nodeRetrieveController)
+nodeRouter.delete('/:id', authMiddleware, nodeValidationController(), nodeDeleteController)
 nodeRouter.get('/:id/download', nodeValidationController('FILE'), nodeDownloadController)
 
 export default nodeRouter

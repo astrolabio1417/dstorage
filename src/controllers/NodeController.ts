@@ -224,3 +224,16 @@ export const nodeDownloadController = asyncWrapper(async (req, res) => {
     },
   )
 })
+
+export const nodeDeleteController = asyncWrapper(async (req, res) => {
+  if (!req.node?.id) {
+    res.status(404).json({ message: NODE_NOT_FOUND_MESSAGE })
+    return
+  }
+
+  const deleted = await db.delete(nodesTable).where(eq(nodesTable.id, req.node.id)).returning({
+    deletedId: nodesTable.id,
+  })
+
+  res.json({ deleted })
+})
