@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Discord Storage</title>
+    <meta name="color-scheme" content="light dark" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap" rel="stylesheet" />
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+</head>
+
+<body class="bg-gray-700 text-white flex justify-center items-center">
+    <div class="max-w-xs w-full my-25">
+        <b class="font-bold text-xl">Login</b>
+
+        <form id="login-form" class="flex flex-col gap-2 mt-5">
+            <input required type="text" name="password" class="p-2 border rounded-sm w-full" placeholder="Password" />
+            <input type="submit" value="Login" class="rounded bg-gray-800 py-2 w-full cursor-pointer" />
+            <a href="/" class="rounded bg-gray-800 py-2 w-full cursor-pointer text-center">Home</a>
+        </form>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script type="text/javascript" src="/auth.js"></script>
+    <script>
+        window.addEventListener('load', () => {
+            initLoginForm()
+        })
+
+        function initLoginForm() {
+            const form = document.getElementById('login-form')
+            form.onsubmit = submitHandler
+        }
+
+        async function submitHandler(e) {
+            e.preventDefault()
+            const formData = new FormData(e.target)
+
+            try {
+                const token = await login(formData.get('password'))
+                localStorage.setItem(tokenKey, token)
+                window.location = '/'
+            } catch (e) {
+                Toastify({
+                    text: e?.message || 'Login Failed',
+                    duration: 3000,
+                    close: true,
+                    gravity: 'top',
+                    position: 'right',
+                    stopOnFocus: true,
+                    style: { background: '#d6584f' },
+                }).showToast()
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,4 +1,3 @@
-
 window.addEventListener("load", () => {
     initModalForms()
 
@@ -31,7 +30,8 @@ window.addEventListener("load", () => {
             }
             const res = await fetch("/api/nodes/", {
                 method: 'post', headers: {
-                    "content-type": "application/json"
+                    "content-type": "application/json",
+                    Authorization: getToken()
                 }, body: JSON.stringify(body)
             })
             const data = await res.json()
@@ -121,6 +121,7 @@ window.addEventListener("load", () => {
         }
 
         xhr.open('POST', '/api/nodes/upload')
+        xhr.setRequestHeader("Authorization", getToken())
         xhr.send(formData)
         submitBtn.setAttribute('disabled', true)
         submitBtn.value = "Uploading..."
@@ -138,6 +139,18 @@ window.addEventListener("load", () => {
     function initModalForms() {
         const uploadModal = document.getElementById("modal")
         const fileForm = document.getElementById('t-file-form')
+        const folderForm = document.getElementById("t-folder-form")
+        const modalToggleBtns = document.querySelectorAll(".modal-toggle-btn")
+
+        const authorized = !!getToken()
+
+        if (!authorized) {
+            fileForm.remove()
+            folderForm.remove()
+            modalToggleBtns.forEach(e => e.remove())
+            return
+        }
+
         fileForm.onsubmit = uploader
         fileForm.onchange = (e) => {
             const label = document.getElementById('filename')
@@ -151,10 +164,8 @@ window.addEventListener("load", () => {
             console.log(e.target.files)
         }
 
-        const folderForm = document.getElementById("t-folder-form")
         folderForm.onsubmit = createFile
 
-        const modalToggleBtns = document.querySelectorAll(".modal-toggle-btn")
 
         modalToggleBtns.forEach(modalToggleBtn => {
             modalToggleBtn.addEventListener("click", () => {

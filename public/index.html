@@ -21,7 +21,61 @@
       <h1 class="p-2 font-bold">DStorage</h1>
 
       <div class="my-5 w-full flex flex-col gap-2">
-        <a class="rounded bg-gray-800 px-2 py-2 w-full" href="/">Home</a>
+        <a class="flex gap-2 items-center rounded bg-gray-800 px-2 py-2 w-full text-center" href="/" title="Home">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg"
+            fill="#000000">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+              <defs>
+                <style>
+                  .cls-1 {
+                    fill: none;
+                    stroke: #ffffff;
+                    stroke-miterlimit: 10;
+                    stroke-width: 2.4px;
+                  }
+
+                  .cls-2 {
+                    fill: #ffffff;
+                  }
+                </style>
+              </defs>
+              <rect class="cls-1" x="4.36" y="16.77" width="15.27" height="5.73" rx="1.91"></rect>
+              <path class="cls-1" d="M19.64,18.68V3.41A1.91,1.91,0,0,0,17.73,1.5H6.27A1.91,1.91,0,0,0,4.36,3.41V18.68">
+              </path>
+              <line class="cls-1" x1="13.91" y1="19.64" x2="17.73" y2="19.64"></line>
+              <circle class="cls-2" cx="7.23" cy="19.64" r="0.95"></circle>
+            </g>
+          </svg>
+          <span>Storage</span>
+        </a>
+        <a id="login-btn" class="flex gap-2 items-center rounded bg-gray-800 px-2 py-2 w-full hidden text-center"
+          href="/login">
+          <svg class="h-5 w-5" fill="#ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+              <path
+                d="M20,21V3H13a1,1,0,0,1,0-2h8a1,1,0,0,1,1,1V22a1,1,0,0,1-1,1H13a1,1,0,0,1,0-2ZM2,12a1,1,0,0,0,1,1H14.586l-2.293,2.293a1,1,0,1,0,1.414,1.414l4-4a1,1,0,0,0,0-1.414l-4-4a1,1,0,1,0-1.414,1.414L14.586,11H3A1,1,0,0,0,2,12Z">
+              </path>
+            </g>
+          </svg>
+          <span>Login</span>
+        </a>
+        <button id="logout-btn"
+          class="flex gap-2 items-center rounded bg-gray-800 px-2 py-2 w-full text-start cursor-pointer hidden text-center">
+          <svg class="h-5 w-5" fill="#ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+              <path
+                d="M7.707,8.707,5.414,11H17a1,1,0,0,1,0,2H5.414l2.293,2.293a1,1,0,1,1-1.414,1.414l-4-4a1,1,0,0,1,0-1.414l4-4A1,1,0,1,1,7.707,8.707ZM21,1H13a1,1,0,0,0,0,2h7V21H13a1,1,0,0,0,0,2h8a1,1,0,0,0,1-1V2A1,1,0,0,0,21,1Z">
+              </path>
+            </g>
+          </svg>
+          <span>Logout</span>
+        </button>
       </div>
     </div>
     <div class="border-l border-white/25 w-full h-full flex flex-col">
@@ -141,19 +195,40 @@
 
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
+  <script type="text/javascript" src="/auth.js"></script>
+
   <script type="text/javascript" src="/uploader.js"></script>
 
-
-
   <script type="text/javascript">
-
-    const folder = `<svg  height="7em" fill="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M2.8 5H1v16h22V5H12.2L11 3H4zM22 20H2V9h20zM10.434 4l1.2 2H22v2H2V6h1.366l1.2-2z"></path><path fill="none" d="M0 0h24v24H0z"></path></g></svg>`
-
-    const file = `<svg height="7em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" stroke="#CCCCCC" stroke-width="0.24000000000000005"></g><g id="SVGRepo_iconCarrier"> <path d="M19 9V17.8C19 18.9201 19 19.4802 18.782 19.908C18.5903 20.2843 18.2843 20.5903 17.908 20.782C17.4802 21 16.9201 21 15.8 21H8.2C7.07989 21 6.51984 21 6.09202 20.782C5.71569 20.5903 5.40973 20.2843 5.21799 19.908C5 19.4802 5 18.9201 5 17.8V6.2C5 5.07989 5 4.51984 5.21799 4.09202C5.40973 3.71569 5.71569 3.40973 6.09202 3.21799C6.51984 3 7.0799 3 8.2 3H13M19 9L13 3M19 9H14C13.4477 9 13 8.55228 13 8V3" stroke="#ffffff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>`
+    const folderSvg = `<svg  height="7em" fill="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M2.8 5H1v16h22V5H12.2L11 3H4zM22 20H2V9h20zM10.434 4l1.2 2H22v2H2V6h1.366l1.2-2z"></path><path fill="none" d="M0 0h24v24H0z"></path></g></svg>`
+    const fileSvg = `<svg height="7em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" stroke="#CCCCCC" stroke-width="0.24000000000000005"></g><g id="SVGRepo_iconCarrier"> <path d="M19 9V17.8C19 18.9201 19 19.4802 18.782 19.908C18.5903 20.2843 18.2843 20.5903 17.908 20.782C17.4802 21 16.9201 21 15.8 21H8.2C7.07989 21 6.51984 21 6.09202 20.782C5.71569 20.5903 5.40973 20.2843 5.21799 19.908C5 19.4802 5 18.9201 5 17.8V6.2C5 5.07989 5 4.51984 5.21799 4.09202C5.40973 3.71569 5.71569 3.40973 6.09202 3.21799C6.51984 3 7.0799 3 8.2 3H13M19 9L13 3M19 9H14C13.4477 9 13 8.55228 13 8V3" stroke="#ffffff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>`
 
     window.addEventListener('load', () => {
       loadNodes()
+      loadUser()
     })
+
+    function loadUser() {
+      const token = getToken()
+      const loginBtn = document.getElementById('login-btn')
+      const logoutBtn = document.getElementById('logout-btn')
+      loginBtn.classList.remove('hidden')
+      logoutBtn.classList.remove('hidden')
+
+      logoutBtn.onclick = logoutHandler
+
+      if (!token) {
+        logoutBtn.classList.add('hidden')
+        return
+      }
+
+      loginBtn.classList.add('hidden')
+    }
+
+    async function logoutHandler() {
+      await logout()
+      window.location.reload()
+    }
 
     async function getNodes() {
       const u = new URL(`${window.location.origin}/api/nodes`)
@@ -163,7 +238,9 @@
         u.searchParams.set('parent', parent)
       }
 
-      const res = await fetch(u.toString())
+      const res = await fetch(u.toString(), {
+        headers: { authorization: getToken() },
+      })
       if (!res.ok) return null
       return res.json()
     }
@@ -189,10 +266,10 @@
         nodeLink.href = isFolder
           ? getNextFolder(node.id)
           : isVideo
-            ? `/video.html?url=${window.location.origin}/api/nodes/${node.id}/download`
+            ? `/video?url=${window.location.origin}/api/nodes/${node.id}/download`
             : `/api/nodes/${node.id}/download`
         const nodePar = document.createElement('p')
-        nodeLink.innerHTML = isFolder ? folder : file
+        nodeLink.innerHTML = isFolder ? folderSvg : fileSvg
         nodePar.classList = 'text-nowrap overflow-hidden'
         nodePar.innerHTML = node.name
         nodeLink.append(nodePar)
