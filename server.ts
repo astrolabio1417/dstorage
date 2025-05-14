@@ -1,13 +1,12 @@
 import 'dotenv/config'
+import { logger } from '@/logger'
+import errorHandlerMiddleware from '@/middleware/errorHandler'
+import authRouter from '@/routes/authRoutes'
+import nodeRouter from '@/routes/nodeRoutes'
 import bodyParser from 'body-parser'
 import express from 'express'
 import path from 'path'
 import pino from 'pino-http'
-
-import { logger } from './logger'
-import errorHandlerMiddleware from './middleware/errorHandler'
-import authRouter from './routes/authRoutes'
-import nodeRouter from './routes/nodeRoutes'
 
 const port = 3000
 const app = express()

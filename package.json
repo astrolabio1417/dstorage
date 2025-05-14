@@ -1,13 +1,12 @@
 {
-  "name": "dstorage",
+  "name": "DStorage",
   "version": "1.0.0",
   "description": "Discord Storage",
-  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node dist/server.js",
-    "build": "tsc",
-    "dev": "tsx --watch src/server.ts",
+    "build": "tsup server.ts --minify",
+    "dev": "tsx --watch server.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint ./src",
     "lint:fix": "eslint --fix ./src",
@@ -49,6 +48,7 @@
     "pino-pretty": "^13.0.0",
     "pipeline-pipe": "^0.3.0",
     "prettier": "^3.5.3",
+    "tsup": "^8.4.0",
     "zod": "^3.24.3",
     "zod-validation-error": "^3.4.0"
   }

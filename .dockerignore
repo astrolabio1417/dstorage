@@ -3,3 +3,4 @@ generated/prisma/
 .PGDATA
 .PGDATA_DRIZZLE
 waw.mp4
+dist

@@ -6,3 +6,4 @@ node_modules
 waw.mp4
 .cache
 app.log
+dist
