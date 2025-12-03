@@ -1,96 +1,73 @@
 import { cache } from '@/cache'
 import { db } from '@/db'
-import { filesTable, nodesTable, typesEnum } from '@/db/schema'
+import { filesTable, nodesTable } from '@/db/schema'
 import { discordFile } from '@/discord/DiscordFile'
 import { CustomDiscordStorageFileResult } from '@/discord/DiscordStorage'
 import { logger } from '@/logger'
 import { idSchema, nodeCreateFolderSchema, nodeCreateSchema, nodeParentSchema } from '@/schemas/NodeSchemas'
+import { createNode, createNodes, deleteNode, getNode, getNodes } from '@/services/nodeService'
 import { asyncWrapper, parseRange } from '@/utils'
-import { and, asc, eq, inArray, isNull, sql, SQL } from 'drizzle-orm'
+import { asc, eq, inArray, sql, SQL } from 'drizzle-orm'
 import mime from 'mime'
 import { PassThrough } from 'stream'
 
 export const NODE_NOT_FOUND_MESSAGE = 'Node not found!'
 export const DUPLICATE_ERROR_MESSAGE = 'Duplicate record: unique constraint failed.'
 
-export const nodeValidationController = (type: (typeof typesEnum.enumValues)[number] | null = null) =>
-  asyncWrapper(async (req, res, next) => {
-    const { id } = idSchema.parse(req.params)
-    const conditions = [eq(nodesTable.id, id)]
-
-    if (type) {
-      conditions.push(eq(nodesTable.type, type))
-    }
-
-    const nodes = await db
-      .select()
-      .from(nodesTable)
-      .where(and(...conditions))
-      .limit(1)
-
-    if (!nodes.length) {
-      res.status(404).json({ message: `Node ${type ? `with a type of ${type} ` : ''}not found!` })
-      return
-    }
-
-    req.node = nodes[0]
-    next()
-  })
-
 export const nodeRetrieveController = asyncWrapper(async (req, res) => {
-  if (!req.node) {
+  const { id } = idSchema.parse(req.params)
+  const node = await getNode({ id })
+
+  if (!node) {
     res.status(404).json({ message: NODE_NOT_FOUND_MESSAGE })
     return
   }
 
+  const prevNodes: (typeof nodesTable.$inferInsert)[] = []
+  let parentNodeId: null | number = node.parent
+
+  while (parentNodeId) {
+    const parentNode = await getNode({ id: parentNodeId })
+    if (!parentNode) break
+    console.log(parentNode)
+    prevNodes.push(parentNode)
+    parentNodeId = parentNode.parent
+  }
+
   res.json({
-    ...req.node,
-    files: await db.select().from(nodesTable).where(eq(nodesTable.parent, req.node.id)),
-    nodeFiles: await db.select().from(filesTable).where(eq(filesTable.node, req.node.id)).orderBy(asc(filesTable.startRange)),
+    ...node,
+    nodeFiles: await db.select().from(filesTable).where(eq(filesTable.node, node.id)).orderBy(asc(filesTable.startRange)),
+    prevNodes,
   })
 })
 
 export const nodeCreateFolderController = asyncWrapper(async (req, res) => {
-  const { name, parent } = await nodeCreateFolderSchema.parseAsync(req.body)
-  const conditions = [eq(nodesTable.name, name), eq(nodesTable.type, 'FOLDER')]
+  const { name, parent = null } = await nodeCreateFolderSchema.parseAsync(req.body)
+  const node = await getNode({ name, parent, type: 'FOLDER' })
 
-  if (parent) {
-    conditions.push(eq(nodesTable.parent, parent))
-  }
-
-  const node = await db
-    .select()
-    .from(nodesTable)
-    .where(and(...conditions))
-
-  if (node.length) {
+  if (node) {
     res.status(400).json({ message: DUPLICATE_ERROR_MESSAGE })
     return
   }
 
-  const data = await db.insert(nodesTable).values({ name, parent, type: 'FOLDER' }).returning()
-  res.json(data[0])
+  const data = await createNode({ name, parent, type: 'FOLDER' })
+  res.json(data)
 })
 
 export const nodeUploadFilesController = asyncWrapper(async (req, res) => {
   const { parent } = await nodeParentSchema.parseAsync(req.body)
-  let node: typeof nodesTable.$inferSelect | undefined = undefined
+  let parentNode: typeof nodesTable.$inferSelect | undefined = undefined
   const files = req.files as CustomDiscordStorageFileResult[]
   const nodeFiles: (typeof filesTable.$inferInsert)[] = []
 
   if (parent) {
-    const parentNode = await db
-      .select()
-      .from(nodesTable)
-      .where(and(eq(nodesTable.id, parent), eq(nodesTable.type, 'FOLDER')))
+    parentNode = await getNode({ id: parent, type: 'FOLDER' })
 
-    if (!parentNode.length) {
+    if (!parentNode) {
       res.status(404).json({ message: NODE_NOT_FOUND_MESSAGE })
       // TODO: delete the file from storage if possible
       return
     }
-
-    node = parentNode[0]
   }
 
   if (!files[0]?.discordResult.length) {
@@ -100,11 +77,11 @@ export const nodeUploadFilesController = asyncWrapper(async (req, res) => {
 
   const data: (typeof nodesTable.$inferInsert)[] = files.map((f) => ({
     name: f.originalname ?? '',
-    parent: node?.id,
+    parent: parentNode?.id,
     type: 'FILE',
   }))
 
-  const createdNodes = await db.insert(nodesTable).values(data).returning()
+  const createdNodes = await createNodes(data)
 
   createdNodes.forEach((n) => {
     const f = files.find((f) => f.originalname === n.name)
@@ -127,31 +104,30 @@ export const nodeUploadFilesController = asyncWrapper(async (req, res) => {
 })
 
 export const nodeCreateController = asyncWrapper(async (req, res) => {
-  const { name, parent: parentId, type } = await nodeCreateSchema.parseAsync(req.body)
-  const conditions = [eq(nodesTable.name, name), eq(nodesTable.type, type), parentId ? eq(nodesTable.parent, parentId) : isNull(nodesTable.parent)]
+  const { name, parent, type } = await nodeCreateSchema.parseAsync(req.body)
+  const node = await getNode({ name, parent, type })
 
-  const nodes = await db
-    .select()
-    .from(nodesTable)
-    .where(and(...conditions))
-
-  if (nodes.length) {
+  if (node) {
     res.status(400).json({ message: DUPLICATE_ERROR_MESSAGE })
     return
   }
 
-  const data = await db.insert(nodesTable).values({ name, parent: parentId, type }).returning()
-  res.json(data[0])
+  const data = await createNode({ name, parent, type })
+  res.json(data)
 })
 
 export const nodeListController = asyncWrapper(async (req, res) => {
   const { parent } = await nodeParentSchema.parseAsync(req.query)
-  const nodes = await db
-    .select()
-    .from(nodesTable)
-    .where(parent ? eq(nodesTable.parent, parent) : isNull(nodesTable.parent))
-    .orderBy(asc(nodesTable.type), asc(nodesTable.name), asc(nodesTable.id))
+  const nodes = await getNodes({
+    orderBy: [
+      ['asc', 'type'],
+      ['asc', 'name'],
+      ['asc', 'id'],
+    ],
+    parent,
+  })
 
+  console.log(nodes)
   res.json(nodes)
 })
 
@@ -179,12 +155,13 @@ export const nodeDownloadController = asyncWrapper(async (req, res) => {
   const parsedRange = parseRange(rangeString ?? '', endRange)
   const passthrough = new PassThrough()
 
+  const node = await getNode({ id, type: 'FILE' })
   res.writeHead(rangeString ? 206 : 200, {
     'Accept-Ranges': 'bytes',
-    'content-disposition': 'attachment; filename=' + (req.node?.name ?? 'file'),
+    'content-disposition': 'attachment; filename=' + (node?.name ?? 'file'),
     'Content-Length': parsedRange[1] - parsedRange[0] + 1,
     'Content-Range': `bytes ${parsedRange[0].toString()}-${parsedRange[1].toString()}/${totalSize.toString()}`,
-    'Content-Type': mime.getType(req.node?.name ?? '')?.toString() ?? mime.getType('txt')?.toString(),
+    'Content-Type': mime.getType(node?.name ?? '')?.toString() ?? mime.getType('txt')?.toString(),
   })
 
   passthrough.pipe(res)
@@ -226,14 +203,14 @@ export const nodeDownloadController = asyncWrapper(async (req, res) => {
 })
 
 export const nodeDeleteController = asyncWrapper(async (req, res) => {
-  if (!req.node?.id) {
+  const { id } = idSchema.parse(req.params)
+  const node = await getNode({ id })
+
+  if (!node) {
     res.status(404).json({ message: NODE_NOT_FOUND_MESSAGE })
     return
   }
 
-  const deleted = await db.delete(nodesTable).where(eq(nodesTable.id, req.node.id)).returning({
-    deletedId: nodesTable.id,
-  })
-
+  const deleted = await deleteNode(node.id)
   res.json({ deleted })
 })
