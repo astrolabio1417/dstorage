@@ -5,7 +5,6 @@ import {
   nodeListController,
   nodeRetrieveController,
   nodeUploadFilesController,
-  nodeValidationController,
 } from '@/controllers/NodeController'
 import { authMiddleware } from '@/middleware/authMiddleware'
 import uploadFiles from '@/middleware/upload'
@@ -18,8 +17,8 @@ nodeRouter.post('/', authMiddleware, nodeCreateFolderController)
 
 nodeRouter.post('/upload', authMiddleware, uploadFiles.array('files'), nodeUploadFilesController)
 
-nodeRouter.get('/:id', nodeValidationController(), nodeRetrieveController)
-nodeRouter.delete('/:id', authMiddleware, nodeValidationController(), nodeDeleteController)
-nodeRouter.get('/:id/download', nodeValidationController('FILE'), nodeDownloadController)
+nodeRouter.get('/:id', nodeRetrieveController)
+nodeRouter.delete('/:id', authMiddleware, nodeDeleteController)
+nodeRouter.get('/:id/download', nodeDownloadController)
 
 export default nodeRouter
