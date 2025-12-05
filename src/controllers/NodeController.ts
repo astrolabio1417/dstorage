@@ -127,7 +127,6 @@ export const nodeListController = asyncWrapper(async (req, res) => {
     parent,
   })
 
-  console.log(nodes)
   res.json(nodes)
 })
 
@@ -153,7 +152,6 @@ export const nodeDownloadController = asyncWrapper(async (req, res) => {
   const endRange = nodeFiles[nodeFiles.length - 1].endRange
   const totalSize = endRange + 1
   const parsedRange = parseRange(rangeString ?? '', endRange)
-  const passthrough = new PassThrough()
 
   const node = await getNode({ id, type: 'FILE' })
   res.writeHead(rangeString ? 206 : 200, {
@@ -162,6 +160,12 @@ export const nodeDownloadController = asyncWrapper(async (req, res) => {
     'Content-Length': parsedRange[1] - parsedRange[0] + 1,
     'Content-Range': `bytes ${parsedRange[0].toString()}-${parsedRange[1].toString()}/${totalSize.toString()}`,
     'Content-Type': mime.getType(node?.name ?? '')?.toString() ?? mime.getType('txt')?.toString(),
+  })
+  const passthrough = new PassThrough()
+
+  passthrough.once('error', (err) => {
+    res.destroy(err)
+    passthrough.destroy()
   })
 
   passthrough.pipe(res)

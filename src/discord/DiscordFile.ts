@@ -130,22 +130,15 @@ class DiscordFile {
           throw new Error(`Failed to fetch: ${res.status.toString()} | ${res.url}`)
         }
 
-        if (!res.body) {
-          throw new Error(`Body returns null: ${res.status.toString()} | ${res.url}`)
-        }
-
         // await pipeline(res.body, passThroughStream, { end: false })
 
         await new Promise<void>((resolve, reject) => {
-          passThroughStream.on('error', reject)
-
           if (!res.body) {
-            reject(new Error('empty response body'))
+            reject(new Error(`Body returns null: ${res.status.toString()} | ${res.url}`))
             return
           }
-
-          res.body.on('error', reject)
-          res.body.on('end', () => {
+          res.body.once('error', reject)
+          res.body.once('end', () => {
             resolve()
           })
           res.body.pipe(passThroughStream, { end: false })
