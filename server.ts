@@ -17,11 +17,11 @@ app.use(express.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 
 app.get('/video', (_, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'video.html'))
+  res.sendFile(path.join(process.cwd(), 'public', 'video.html'))
 })
 
 app.get('/login', (_, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'))
+  res.sendFile(path.join(process.cwd(), 'public', 'login.html'))
 })
 
 app.use('/api/nodes', nodeRouter)
